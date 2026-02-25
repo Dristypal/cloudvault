@@ -1,0 +1,6 @@
+{
+  "explorer.autoReveal": true,
+  "window.title": "${rootName} — ${rootPath}",
+  "breadcrumbs.enabled": true,
+  "explorer.compactFolders": false
+}

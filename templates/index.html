@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CloudVault Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif;}
+body{display:flex;min-height:100vh;background:#f5f5f7;transition:.3s;}
+body.dark{background:#0f172a;color:white;}
+
+.sidebar{
+    width:250px;
+    background:white;
+    padding:30px 20px;
+    position:fixed;
+    height:100%;
+    border-right:1px solid #eee;
+    transition:.3s;
+}
+body.dark .sidebar{background:#111827;border:none;}
+
+.logo{font-size:20px;font-weight:600;margin-bottom:30px;}
+
+.avatar{
+    width:60px;height:60px;
+    border-radius:50%;
+    background:#0071e3;
+    display:flex;align-items:center;justify-content:center;
+    color:white;font-size:22px;margin-bottom:20px;
+}
+
+.menu a{
+    display:block;padding:12px;border-radius:10px;
+    text-decoration:none;color:#6e6e73;margin-bottom:10px;
+    transition:.2s;
+}
+.menu a:hover{background:#f0f0f5;color:black;}
+body.dark .menu a{color:#cbd5e1;}
+body.dark .menu a:hover{background:#1f2937;color:white;}
+
+.toggle-dark{
+    margin-top:20px;
+    cursor:pointer;
+    font-size:14px;
+    color:#0071e3;
+}
+
+.main{
+    margin-left:250px;
+    width:100%;
+    padding:50px;
+}
+
+.card{
+    background:white;
+    padding:30px;
+    border-radius:18px;
+    box-shadow:0 20px 40px rgba(0,0,0,0.04);
+    margin-bottom:30px;
+    transition:.3s;
+}
+body.dark .card{background:#1f2937;color:white;}
+
+.progress-bg{
+    height:12px;background:#e5e7eb;border-radius:10px;overflow:hidden;
+}
+body.dark .progress-bg{background:#374151;}
+.progress-fill{
+    height:100%;width:0%;
+    background:#0071e3;border-radius:10px;
+    transition:width 1s ease;
+}
+
+/* Upload Drag */
+.upload-box{
+    border:2px dashed #ccc;
+    padding:30px;
+    text-align:center;
+    border-radius:15px;
+    transition:.3s;
+}
+.upload-box.dragover{
+    background:#eef6ff;
+    border-color:#0071e3;
+}
+
+/* File List */
+.search-bar{
+    width:100%;
+    padding:10px;
+    margin-bottom:15px;
+    border-radius:10px;
+    border:1px solid #ddd;
+}
+.file-item{
+    display:flex;justify-content:space-between;
+    padding:12px 0;border-bottom:1px solid #f0f0f5;
+    align-items:center;
+}
+.file-left{display:flex;align-items:center;}
+.file-icon{font-size:22px;margin-right:10px;}
+
+.file-actions a{
+    text-decoration:none;margin-left:12px;font-size:14px;
+}
+.download{color:#0071e3;}
+.delete{color:#ff3b30;}
+
+/* Chatbot */
+#chat-toggle{
+position:fixed;bottom:25px;right:25px;
+background:#0071e3;color:white;
+width:60px;height:60px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;
+font-size:24px;cursor:pointer;
+box-shadow:0 10px 30px rgba(0,0,0,.2);z-index:9999;
+}
+#chatbot{
+position:fixed;bottom:100px;right:25px;width:350px;
+background:white;border-radius:20px;
+box-shadow:0 20px 50px rgba(0,0,0,.2);
+display:none;flex-direction:column;overflow:hidden;z-index:9999;
+}
+.chat-header{
+background:#0071e3;color:white;padding:16px;
+display:flex;justify-content:space-between;
+}
+.chat-body{padding:15px;height:260px;overflow-y:auto;background:#f9fafb;}
+.chat-input{display:flex;border-top:1px solid #eee;}
+.chat-input input{flex:1;padding:12px;border:none;outline:none;}
+.chat-input button{background:#0071e3;color:white;border:none;padding:12px;}
+.bot-message,.user-message{
+padding:10px 14px;border-radius:14px;margin-bottom:10px;font-size:14px;
+}
+.bot-message{background:#e5e7eb;}
+.user-message{background:#0071e3;color:white;text-align:right;}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <div class="logo">CloudVault</div>
+
+    <div class="avatar">
+        {{ current_user.id[0]|upper }}
+    </div>
+
+    <div class="menu">
+        <a href="/">Dashboard</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="toggle-dark" onclick="toggleDark()">
+        🌙 Toggle Dark Mode
+    </div>
+</div>
+
+<div class="main">
+
+<!-- Storage -->
+<div class="card">
+<h2>Storage Overview</h2>
+<div style="margin:8px 0 20px;font-size:14px;color:#6e6e73;">
+{{ total_size }} MB of {{ max_storage }} MB used
+</div>
+
+<div class="progress-bg">
+    <div id="storageBar" class="progress-fill"></div>
+</div>
+
+<div style="margin-top:8px;font-size:13px;">
+{{ (total_size / max_storage * 100)|round(1) }}% used
+</div>
+</div>
+
+<!-- Upload -->
+<div class="card">
+<div class="upload-box" id="dropArea">
+<form action="/upload" method="POST" enctype="multipart/form-data">
+<input type="file" name="file" required><br><br>
+<button class="btn">Upload File</button>
+</form>
+<p style="margin-top:10px;font-size:13px;">Drag & Drop files here</p>
+</div>
+</div>
+
+<!-- Files -->
+<div class="card">
+<h3>Your Files</h3>
+<input type="text" class="search-bar" id="searchInput" placeholder="Search files...">
+
+{% if files %}
+{% for file in files %}
+<div class="file-item fileRow">
+    <div class="file-left">
+        <div class="file-icon">
+            {% if file.endswith('.pdf') %}📄
+            {% elif file.endswith('.png') or file.endswith('.jpg') %}🖼️
+            {% elif file.endswith('.doc') or file.endswith('.docx') %}📃
+            {% else %}📁{% endif %}
+        </div>
+        <div class="file-name">{{ file }}</div>
+    </div>
+    <div class="file-actions">
+        <a class="download" href="/download/{{ file }}">Download</a>
+        <a class="delete" href="/delete/{{ file }}">Delete</a>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<p>No files uploaded yet.</p>
+{% endif %}
+</div>
+
+</div>
+
+<!-- Chatbot -->
+<div id="chat-toggle">💬</div>
+
+<div id="chatbot">
+<div class="chat-header">
+CloudVault AI
+<span onclick="closeChat()">✖</span>
+</div>
+<div class="chat-body" id="chat-body">
+<div class="bot-message">Hi 👋 I'm your AI assistant.</div>
+</div>
+<div class="chat-input">
+<input type="text" id="user-input" placeholder="Ask something...">
+<button onclick="sendMessage()">Send</button>
+</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+let percent={{ (total_size / max_storage * 100)|round(1) }};
+document.getElementById("storageBar").style.width=percent+"%";
+});
+
+/* Dark Mode */
+function toggleDark(){
+document.body.classList.toggle("dark");
+}
+
+/* Search */
+document.getElementById("searchInput").addEventListener("keyup",function(){
+let value=this.value.toLowerCase();
+document.querySelectorAll(".fileRow").forEach(row=>{
+row.style.display=row.innerText.toLowerCase().includes(value)?"flex":"none";
+});
+});
+
+/* Drag */
+let dropArea=document.getElementById("dropArea");
+dropArea.addEventListener("dragover",e=>{
+e.preventDefault();dropArea.classList.add("dragover");
+});
+dropArea.addEventListener("dragleave",()=>{
+dropArea.classList.remove("dragover");
+});
+
+/* Chatbot */
+document.getElementById("chat-toggle").onclick=function(){
+document.getElementById("chatbot").style.display="flex";
+}
+function closeChat(){document.getElementById("chatbot").style.display="none";}
+
+function sendMessage(){
+let input=document.getElementById("user-input");
+let message=input.value.trim();
+if(!message)return;
+let chatBody=document.getElementById("chat-body");
+chatBody.innerHTML+=`<div class="user-message">${message}</div>`;
+input.value="";
+chatBody.innerHTML+=`<div class="bot-message" id="loading">AI is typing...</div>`;
+chatBody.scrollTop=chatBody.scrollHeight;
+
+fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},
+body:JSON.stringify({message:message})})
+.then(res=>res.json())
+.then(data=>{
+document.getElementById("loading").remove();
+chatBody.innerHTML+=`<div class="bot-message">${data.reply}</div>`;
+chatBody.scrollTop=chatBody.scrollHeight;
+})
+.catch(()=>{
+document.getElementById("loading").remove();
+chatBody.innerHTML+=`<div class="bot-message">AI unavailable.</div>`;
+});
+}
+</script>
+
+</body>
+</html>
+</body>
+</html>
